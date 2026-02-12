@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trips Toggle View</title>
 
-<!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Playwrite+NZ+Basic:wght@400;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -30,45 +29,38 @@ button.toggle-view { padding:8px 16px; font-size:14px; border-radius:6px; border
 .entry-sidebar .top-half .title { font-family:'Playwrite NZ Basic', cursive; font-size:20px; font-weight:600; margin-bottom:8px; }
 .entry-sidebar .bottom-half { flex:1; }
 .entry-main { width:75%; position:relative; }
-.entry-image { width:100%; height:100%; background-size:cover; background-position:center; border-radius:0 8px 8px 0; }
+.entry-image {
+  width:100%;
+  height:100%;
+  background-size:cover;
+  background-position:center;
+  border-radius:0 8px 8px 0;
+  will-change: transform;
+}
 
 /* MOBILE */
 @media (max-width:768px){
   .entry { flex-direction:column; height:auto; }
   .entry-sidebar { display:none; }
 
-  /* Mobile photo + card wrapper */
   .mobile-entry { display:flex; flex-direction:column; width:100%; margin-bottom:20px; }
   .entry-main, .mobile-box { width:100%; margin:0; padding:0; box-sizing:border-box; }
   .entry-image { height:44vw; max-height:none; border-radius:0; } 
-  .mobile-box { display:block; background:#1a1a1a; color:white; padding:12px 14px; font-size:13px; line-height:1.3; font-family:'Nunito',sans-serif; border-radius:0; }
+  .mobile-box { display:block; background:#1a1a1a; color:white; padding:12px 14px; font-size:13px; line-height:1.3; font-family:'Nunito',sans-serif; }
   .mobile-box p { margin:3px 0; }
   .mobile-box .title { font-family:'Playwrite NZ Basic'; font-size:18px; font-weight:600; margin-bottom:6px; }
 
-  /* Pagination sticky at bottom */
   .pagination { position:fixed; bottom:0; left:0; width:100%; background:#111; padding:10px 0; display:flex; justify-content:center; z-index:100; overflow-x:auto; }
   .pagination button { margin:0 3px; padding:6px 12px; border:none; border-radius:4px; background:#1a1a1a; color:white; cursor:pointer; white-space:nowrap; flex-shrink:0; }
   .pagination button.active { background:#6188e6; }
 }
+
 @media (min-width:769px){ 
   .mobile-box { display:none; }
   .pagination { text-align:center; margin:15px 0; }
   .pagination button { margin:2px; padding:6px 12px; border:none; border-radius:4px; background:#1a1a1a; color:white; cursor:pointer; }
   .pagination button.active { background:#6188e6; }
 }
-
-/* LIST */
-#listView .filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
-#listView .filters label { display:flex; flex-direction:column; font-size:12px; width:120px; }
-#listView .filters select { padding:4px; font-size:12px; background:#333; color:#fff; border:1px solid #555; }
-
-#listView table { width:100%; border-collapse:collapse; font-size:12.5px; background:#2b2b2b; }
-#listView th, #listView td { padding:8px 10px; border-bottom:1px solid #444; text-align:left; cursor:pointer; }
-#listView th { background:#3a3a3a; }
-#listView tbody tr:nth-child(odd) { background:#2b2b2b; }
-#listView tbody tr:nth-child(even) { background:#303030; }
-#listView tbody tr:hover { background:#3f3f3f !important; cursor:pointer; }
-.dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
 </style>
 </head>
 <body>
@@ -79,60 +71,30 @@ button.toggle-view { padding:8px 16px; font-size:14px; border-radius:6px; border
 </div>
 
 <div id="cardsView"></div>
-
-<div id="listView" style="display:none; padding:10px 20px;">
-  <div class="filters">
-    <label>Type
-      <select id="typeFilter"><option value="">All</option></select>
-    </label>
-    <label>Year
-      <select id="yearFilter"><option value="">All</option></select>
-    </label>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th data-key="dot"></th>
-        <th data-key="title">Hike</th>
-        <th data-key="area">Area</th>
-        <th data-key="type">Type</th>
-        <th data-key="miles">Miles</th>
-        <th data-key="elevationGain">Gain</th>
-        <th data-key="overallRanking">Rank</th>
-        <th data-key="date">Date</th>
-        <th data-key="year">Year</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+<div id="listView" style="display:none; padding:10px 20px;"></div>
 
 <script>
-let allItems=[], allItemsList=[];
+let allItems=[];
 const MOBILE_LIMIT=15;
 const DESKTOP_LIMIT=15;
 let mobilePage=0;
 let desktopPage=0;
-let sortConfig={key:'', ascending:true};
 
 /* UTILS */
-function formatDate(d){ const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});}
-function generatePageUrl(title){ return `https://sites.google.com/view/wholebear/${title.toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-')}`;}
-function getYear(d){ const dt=new Date(d); return isNaN(dt)?'':dt.getFullYear();}
-function getDotColor(type=''){ return {hike:'#6188e6',backpack:'#fd7567',kayak:'#00e74c',other:'#ede562'}[type.toLowerCase()]||'#999';}
+function formatDate(d){
+  const dt=new Date(d);
+  return isNaN(dt)?d:dt.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+}
+function generatePageUrl(title){
+  return `https://sites.google.com/view/wholebear/${title.toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-')}`;
+}
 
 /* LOAD DATA */
 async function loadData(){
-  const resCards=await fetch('https://script.google.com/macros/s/AKfycbweollfSW_IlQr6nka0s77-WPu4sIdIDDpmq0Z9NV0egq0c-8dVcO4nevotzZM6jA4T/exec');
-  const dataCards=await resCards.json();
-  allItems=dataCards.cardItems.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const res=await fetch('https://script.google.com/macros/s/AKfycbweollfSW_IlQr6nka0s77-WPu4sIdIDDpmq0Z9NV0egq0c-8dVcO4nevotzZM6jA4T/exec');
+  const data=await res.json();
+  allItems=data.cardItems.sort((a,b)=>new Date(b.date)-new Date(a.date));
   renderCards();
-
-  const resList=await fetch('https://script.google.com/macros/s/AKfycbznk1370KT6d57VoA4dB2VsiV_enBkGMQyV3os4bNRyuSYIRCghNtf1svECxAq5L64-/exec');
-  const dataList=await resList.json();
-  allItemsList=dataList.items.map(i=>({...i, year:getYear(i.date)}));
-  populateFilters();
-  renderList();
 }
 
 /* RENDER CARDS */
@@ -141,13 +103,11 @@ function renderCards(){
   const isMobile=window.innerWidth<=768;
   container.innerHTML='';
 
-  let itemsToShow, pageIndex, limit;
-  if(isMobile){ pageIndex=mobilePage; limit=MOBILE_LIMIT; }
-  else { pageIndex=desktopPage; limit=DESKTOP_LIMIT; }
+  let pageIndex=isMobile?mobilePage:desktopPage;
+  let limit=isMobile?MOBILE_LIMIT:DESKTOP_LIMIT;
 
   const start=pageIndex*limit;
-  const end=start+limit;
-  itemsToShow=allItems.slice(start,end);
+  const itemsToShow=allItems.slice(start,start+limit);
 
   itemsToShow.forEach(item=>{
     if(isMobile){
@@ -155,7 +115,7 @@ function renderCards(){
         <div class="mobile-entry">
           <div class="entry-main">
             <a href="${generatePageUrl(item.title)}" target="_blank">
-              <div class="entry-image" style="background-image:url('${item.imageUrl}')"></div>
+              <div class="entry-image" data-bg="${item.imageUrl}"></div>
             </a>
           </div>
           <div class="mobile-box">
@@ -180,11 +140,10 @@ function renderCards(){
               <p><strong>Type:</strong> ${item.type}</p>
               <p><strong>Where:</strong> ${item.area}</p>
             </div>
-            <div class="bottom-half"></div>
           </div>
           <div class="entry-main">
             <a href="${generatePageUrl(item.title)}" target="_blank">
-              <div class="entry-image" style="background-image:url('${item.imageUrl}')"></div>
+              <div class="entry-image" data-bg="${item.imageUrl}"></div>
             </a>
           </div>
         </div>
@@ -192,102 +151,44 @@ function renderCards(){
     }
   });
 
-  // Pagination
-  const totalPages=Math.ceil(allItems.length/limit);
-  if(totalPages>1){
-    container.innerHTML+='<div class="pagination"></div>';
-    const paginationDiv=container.querySelector('.pagination');
-    for(let i=0;i<totalPages;i++){
-      const btn=document.createElement('button');
-      btn.textContent=(i+1);
-      if(i===pageIndex) btn.classList.add('active');
-      btn.onclick=(()=>{ 
-        return function(){ 
-          if(isMobile) mobilePage=i; else desktopPage=i;
-          renderCards(); 
-        }; 
-      })();
-      paginationDiv.appendChild(btn);
-    }
-  }
+  lazyLoadBackgrounds();
 }
 
-/* LIST */
-function populateFilters(){
-  const typeFilter=document.getElementById('typeFilter');
-  const yearFilter=document.getElementById('yearFilter');
-  const types=[... new Set(allItemsList.map(i=>i.type).filter(t=>t))].sort();
-  const years=[... new Set(allItemsList.map(i=>i.year).filter(y=>y))].sort((a,b)=>b-a);
-  types.forEach(t=>typeFilter.innerHTML+=`<option value="${t}">${t}</option>`);
-  years.forEach(y=>yearFilter.innerHTML+=`<option value="${y}">${y}</option>`);
+/* LAZY LOAD BACKGROUNDS */
+function lazyLoadBackgrounds(){
+  const images=document.querySelectorAll('.entry-image');
 
-  typeFilter.onchange=renderList;
-  yearFilter.onchange=renderList;
-}
-
-function renderList(){
-  const tbody=document.querySelector('#listView tbody');
-  const typeVal=document.getElementById('typeFilter').value;
-  const yearVal=document.getElementById('yearFilter').value;
-  let filtered=allItemsList.filter(i=>(!typeVal||i.type===typeVal)&&(!yearVal||i.year==yearVal));
-
-  if(sortConfig.key){
-    filtered.sort((a,b)=>{
-      let valA=a[sortConfig.key], valB=b[sortConfig.key];
-      if(sortConfig.key==='date'){ valA=new Date(valA); valB=new Date(valB); }
-      if(typeof valA==='string'){ valA=valA.toLowerCase(); valB=valB.toLowerCase(); }
-      if(valA<valB) return sortConfig.ascending?-1:1;
-      if(valA>valB) return sortConfig.ascending?1:-1;
-      return 0;
+  const observer=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const el=entry.target;
+        const bg=el.getAttribute('data-bg');
+        if(bg){
+          el.style.backgroundImage=`url('${bg}')`;
+          el.removeAttribute('data-bg');
+        }
+        observer.unobserve(el);
+      }
     });
-  }
+  },{ rootMargin:'200px' });
 
-  tbody.innerHTML='';
-  filtered.forEach(item=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><span class="dot" style="background:${getDotColor(item.type)}"></span></td>
-      <td data-label="Hike">${item.title}</td>
-      <td data-label="Area">${item.area}</td>
-      <td data-label="Type">${item.type}</td>
-      <td data-label="Miles">${item.miles}</td>
-      <td data-label="Gain">${item.elevationGain.toLocaleString()}</td>
-      <td data-label="Rank">${item.overallRanking}</td>
-      <td data-label="Date">${formatDate(item.date)}</td>
-      <td data-label="Year">${item.year}</td>
-    `;
-    tr.onclick=()=>window.open(generatePageUrl(item.title),'_blank');
-    tbody.appendChild(tr);
-  });
+  images.forEach(img=>observer.observe(img));
 }
-
-/* SORT HEADERS */
-document.querySelectorAll('#listView th[data-key]').forEach(th=>{
-  th.addEventListener('click', ()=>{
-    const key=th.getAttribute('data-key');
-    if(sortConfig.key===key) sortConfig.ascending=!sortConfig.ascending;
-    else sortConfig={key:key, ascending:true};
-    renderList();
-  });
-});
 
 /* TOGGLE */
-const toggleBtn=document.querySelector('.toggle-view');
-toggleBtn.onclick=()=>{
+document.querySelector('.toggle-view').onclick=()=>{
   const cards=document.getElementById('cardsView');
   const list=document.getElementById('listView');
   if(cards.style.display!=='none'){
-    cards.style.display='none'; list.style.display='block'; toggleBtn.textContent='Switch to Cards View';
+    cards.style.display='none';
+    list.style.display='block';
   }else{
-    cards.style.display='block'; list.style.display='none'; toggleBtn.textContent='Switch to List View';
+    cards.style.display='block';
+    list.style.display='none';
   }
 };
 
-/* RESIZE */
-window.addEventListener('resize', ()=>{
-  if(window.innerWidth<=768) mobilePage=0;
-  renderCards();
-});
+window.addEventListener('resize',renderCards);
 
 loadData();
 </script>
