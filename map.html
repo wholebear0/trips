@@ -1,26 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Google Map – Custom Overlay Popup</title>
+  <title>Trip Map</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Playwrite Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Playwrite+NZ+Basic&display=swap" rel="stylesheet">
+
   <style>
-    /* ===== BASE STYLES ===== */
+    /* ===== PAGE ===== */
     html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
       font-family: Arial, sans-serif;
-      width: 100%;
-      height: 100%;              /* IMPORTANT for GitHub Pages */
       overflow: hidden;
     }
 
-    /* Map wrapper */
-    #map-container {
+    /* ===== TOP RIBBON ===== */
+    #top-ribbon {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      height: 100vh;             /* Full screen on mobile */
-      position: relative;
+      height: 42px;
+      background: #303030;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 14px;
+      z-index: 1000;
+      box-sizing: border-box;
+    }
+
+    .ribbon-btn {
+      font-family: "Playwrite NZ Basic", cursive;
+      font-size: 14px;
+      color: #f5f2e9;
+      text-decoration: none;
+      padding: 6px 14px;
+      border: 1px solid #f5f2e9;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .ribbon-btn:hover {
+      background: #f5f2e9;
+      color: #303030;
+    }
+
+    /* ===== MAP LAYOUT ===== */
+    #map-container {
+      position: absolute;
+      top: 42px;              /* pushes map below ribbon */
+      left: 0;
+      width: 100%;
+      height: calc(100vh - 42px);
     }
 
     #map {
@@ -28,7 +64,7 @@
       height: 100%;
     }
 
-    /* Filters box */
+    /* ===== FILTERS ===== */
     #filters {
       position: absolute;
       z-index: 999;
@@ -37,10 +73,8 @@
       margin: 10px;
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-
-    #filters label {
-      margin-right: 15px;
+      top: 10px;
+      left: 10px;
     }
 
     /* ===== POPUP ===== */
@@ -54,21 +88,6 @@
       width: 300px;
       overflow: hidden;
       cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .popup::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      bottom: -12px;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 12px solid transparent;
-      border-right: 12px solid transparent;
-      border-top: 12px solid #e1e1e1;
-      filter: drop-shadow(0 -2px 0 #5f5f5f);
     }
 
     .popup img {
@@ -80,54 +99,40 @@
     .popup-content {
       padding: 10px 12px;
       font-size: 13px;
-      color: #2a2a2a;
-    }
-
-    .popup-content p {
-      margin: 4px 0;
-    }
-
-    .popup strong {
-      color: #1a1a1a;
     }
 
     .popup-close {
       position: absolute;
       top: 6px;
       right: 6px;
-      width: 26px;        /* bigger tap target */
+      width: 26px;
       height: 26px;
       font-size: 18px;
       line-height: 22px;
       text-align: center;
-      color: #444;
       background: white;
       border-radius: 50%;
       border: none;
       cursor: pointer;
-      z-index: 2;
-    }
-
-    .popup-close:hover {
-      color: #000;
     }
 
     /* ===== MOBILE ===== */
     @media (max-width: 768px) {
-      .popup {
-        width: 260px;
-      }
-
-      #filters {
-        font-size: 14px;
-        padding: 12px;
-      }
+      .popup { width: 260px; }
     }
   </style>
 </head>
 
 <body>
 
+<!-- ===== TOP RIBBON ===== -->
+<div id="top-ribbon">
+  <a class="ribbon-btn" href="https://wholebear0.github.io/trips/">
+    List
+  </a>
+</div>
+
+<!-- ===== FILTERS ===== -->
 <div id="filters">
   <label>Type:
     <select id="typeFilter">
@@ -140,11 +145,12 @@
   </label>
 </div>
 
+<!-- ===== MAP ===== -->
 <div id="map-container">
   <div id="map"></div>
 </div>
 
-<!-- Async load for GitHub Pages stability -->
+<!-- Google Maps API -->
 <script async defer
 src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMCxxUBxZ-a2UyHwu5PbKwYBxvAo0bAAA&callback=initMap">
 </script>
@@ -160,13 +166,11 @@ function initMap() {
     gestureHandling: "greedy"
   });
 
-  /* ========= STORE MARKERS ========= */
   const markers = [];
 
   function generatePageUrl(title) {
     return "https://sites.google.com/view/wholebear/" +
-      title
-        .toLowerCase()
+      title.toLowerCase()
         .replace(/[^\w\s-]/g, "")
         .replace(/\s+/g, "-");
   }
@@ -184,12 +188,9 @@ function initMap() {
         <button class="popup-close">×</button>
         ${data.photoUrl ? `<img src="${data.photoUrl}">` : ""}
         <div class="popup-content">
-          <p><strong>Title:</strong> ${data.title}</p>
-          <p><strong>Area:</strong> ${data.area}</p>
-          <p><strong>Date:</strong> ${data.date}</p>
-          <p><strong>Miles:</strong> ${data.miles}</p>
-          <p><strong>Elevation Gain:</strong> ${data.elevationGain}</p>
-          <p><strong>Overall Ranking:</strong> ${data.overallRanking}</p>
+          <p><strong>${data.title}</strong></p>
+          <p>${data.area}</p>
+          <p>${data.date}</p>
         </div>
       `;
 
@@ -232,12 +233,11 @@ function initMap() {
         return "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
       case "kayak":
         return "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
-      case "other":
+      default:
         return "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
     }
   }
 
-  /* ========= LOAD MARKERS ========= */
   async function loadMarkers() {
 
     const res = await fetch(
@@ -254,9 +254,7 @@ function initMap() {
         icon: getMarkerIcon(d.type)
       });
 
-      /* Store type on marker */
       marker.tripType = d.type;
-
       markers.push(marker);
 
       marker.addListener("click", () => {
@@ -269,7 +267,7 @@ function initMap() {
 
   loadMarkers();
 
-  /* ========= FILTER LOGIC ========= */
+  /* ===== FILTER ===== */
   document
     .getElementById("typeFilter")
     .addEventListener("change", function () {
@@ -277,7 +275,6 @@ function initMap() {
       const selected = this.value;
 
       markers.forEach(marker => {
-
         if (
           selected === "All" ||
           marker.tripType.toLowerCase() === selected.toLowerCase()
@@ -286,14 +283,12 @@ function initMap() {
         } else {
           marker.setMap(null);
         }
-
       });
     });
 }
 
 window.initMap = initMap;
 </script>
-
 
 </body>
 </html>
