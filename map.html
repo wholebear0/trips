@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Playwrite+NZ+Basic&display=swap" rel="stylesheet">
 
   <style>
-    /* ===== PAGE ===== */
     html, body {
       margin: 0;
       padding: 0;
@@ -60,7 +59,7 @@
     /* ===== FILTERS ===== */
     #filters {
       position: absolute;
-      top: 10px;              /* below ribbon */
+      top: 10px;
       left: 10px;
       z-index: 999;
       background: white;
@@ -79,6 +78,32 @@
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
       width: 300px;
       overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .popup-header {
+      background: #303030;
+      color: #f5f2e9;
+      height: 28px;
+      line-height: 28px;
+      padding: 0 12px;
+      font-family: "Playwrite NZ Basic", cursive;
+      font-size: 14px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      position: relative;
+    }
+
+    .popup-header button {
+      background: transparent;
+      border: none;
+      color: #f5f2e9;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
     }
 
     .popup img {
@@ -93,7 +118,14 @@
       font-size: 13px;
     }
 
-    /* ===== VIEW DETAILS BUTTON ===== */
+    .popup-content p {
+      margin: 4px 0;
+    }
+
+    .popup-content strong {
+      font-weight: bold;
+    }
+
     .details-btn {
       display: block;
       width: calc(100% - 24px);
@@ -108,7 +140,7 @@
       border-radius: 6px;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.2s ease;
+      box-sizing: border-box;
     }
 
     .details-btn:hover {
@@ -116,22 +148,6 @@
       color: #f5f2e9;
     }
 
-    .popup-close {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 26px;
-      height: 26px;
-      font-size: 18px;
-      line-height: 22px;
-      text-align: center;
-      background: white;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-    }
-
-    /* ===== MOBILE ===== */
     @media (max-width: 768px) {
       .popup { width: 260px; }
     }
@@ -140,14 +156,12 @@
 
 <body>
 
-<!-- ===== TOP RIBBON ===== -->
 <div id="top-ribbon">
   <a class="ribbon-btn" href="https://wholebear0.github.io/trips/">
     List
   </a>
 </div>
 
-<!-- ===== MAP + FILTER WRAPPER ===== -->
 <div id="map-container">
 
   <div id="filters">
@@ -166,14 +180,12 @@
 
 </div>
 
-<!-- Google Maps -->
 <script async defer
 src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMCxxUBxZ-a2UyHwu5PbKwYBxvAo0bAAA&callback=initMap">
 </script>
 
 <script>
 function initMap() {
-
   const map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: 36.805098, lng: -109.822512 },
     zoom: 6,
@@ -196,26 +208,28 @@ function initMap() {
       super();
       this.position = position;
       this.data = data;
-
       const url = generatePageUrl(data.title);
 
       this.container = document.createElement("div");
       this.container.className = "popup";
 
       this.container.innerHTML = `
-        <button class="popup-close">×</button>
+        <div class="popup-header">
+          <button class="popup-close">×</button>
+        </div>
         ${data.photoUrl ? `<img src="${data.photoUrl}">` : ""}
         <div class="popup-content">
-          <p><strong>${data.title}</strong></p>
-          <p>${data.area}</p>
-          <p>${data.date}</p>
+          <p><strong>Title:</strong> ${data.title}</p>
+          <p><strong>Area:</strong> ${data.area}</p>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Miles:</strong> ${data.miles}</p>
+          <p><strong>Elevation Gain:</strong> ${data.elevationGain}</p>
+          <p><strong>Overall Ranking:</strong> ${data.overallRanking}</p>
         </div>
-        <a class="details-btn" href="${url}" target="_blank">
-          View Details
-        </a>
+        <a class="details-btn" href="${url}" target="_blank">View Details</a>
       `;
 
-      /* Photo click → trip page */
+      // Photo click opens trip page
       const img = this.container.querySelector("img");
       if (img) {
         img.addEventListener("click", () => {
@@ -223,6 +237,7 @@ function initMap() {
         });
       }
 
+      // Close popup button
       this.container.querySelector(".popup-close")
         .addEventListener("click", e => {
           e.stopPropagation();
@@ -235,16 +250,13 @@ function initMap() {
     }
 
     draw() {
-      const point =
-        this.getProjection().fromLatLngToDivPixel(this.position);
+      const point = this.getProjection().fromLatLngToDivPixel(this.position);
       this.container.style.left = point.x + "px";
       this.container.style.top = point.y - 12 + "px";
     }
 
     onRemove() {
-      if (this.container.parentNode) {
-        this.container.parentNode.removeChild(this.container);
-      }
+      if (this.container.parentNode) this.container.parentNode.removeChild(this.container);
     }
   }
 
@@ -252,33 +264,25 @@ function initMap() {
 
   function getMarkerIcon(type) {
     switch (type.toLowerCase()) {
-      case "hike":
-        return "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
-      case "backpack":
-        return "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-      case "kayak":
-        return "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
-      default:
-        return "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+      case "hike": return "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+      case "backpack": return "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+      case "kayak": return "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+      default: return "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
     }
   }
 
   async function loadMarkers() {
-
     const res = await fetch(
       "https://script.google.com/macros/s/AKfycbweollfSW_IlQr6nka0s77-WPu4sIdIDDpmq0Z9NV0egq0c-8dVcO4nevotzZM6jA4T/exec"
     );
-
     const data = await res.json();
 
     data.mapMarkers.forEach(d => {
-
       const marker = new google.maps.Marker({
         position: d.position,
         map,
         icon: getMarkerIcon(d.type)
       });
-
       marker.tripType = d.type;
       markers.push(marker);
 
@@ -292,28 +296,20 @@ function initMap() {
 
   loadMarkers();
 
-  /* ===== FILTER ===== */
-  document
-    .getElementById("typeFilter")
-    .addEventListener("change", function () {
-
-      const selected = this.value;
-
-      markers.forEach(marker => {
-        if (
-          selected === "All" ||
-          marker.tripType.toLowerCase() === selected.toLowerCase()
-        ) {
-          marker.setMap(map);
-        } else {
-          marker.setMap(null);
-        }
-      });
+  // Type filter
+  document.getElementById("typeFilter").addEventListener("change", function () {
+    const selected = this.value;
+    markers.forEach(marker => {
+      if (selected === "All" || marker.tripType.toLowerCase() === selected.toLowerCase()) {
+        marker.setMap(map);
+      } else {
+        marker.setMap(null);
+      }
     });
+  });
 }
 
 window.initMap = initMap;
 </script>
-
 </body>
 </html>
