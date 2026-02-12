@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google Map – Custom Overlay Popup</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    /* ===== BASE STYLES ===== */
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      width: 100%;
+      height: 100%;              /* IMPORTANT for GitHub Pages */
+      overflow: hidden;
+    }
+
+    /* Map wrapper */
+    #map-container {
+      width: 100%;
+      height: 100vh;             /* Full screen on mobile */
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Filters box */
+    #filters {
+      position: absolute;
+      z-index: 999;
+      background: white;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    #filters label {
+      margin-right: 15px;
+    }
+
+    /* ===== POPUP ===== */
+    .popup {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      background: #e1e1e1;
+      border: 2px solid #5f5f5f;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+      width: 300px;
+      overflow: hidden;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .popup::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -12px;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 12px solid #e1e1e1;
+      filter: drop-shadow(0 -2px 0 #5f5f5f);
+    }
+
+    .popup img {
+      width: 100%;
+      display: block;
+      border-bottom: 1px solid #5f5f5f;
+    }
+
+    .popup-content {
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #2a2a2a;
+    }
+
+    .popup-content p {
+      margin: 4px 0;
+    }
+
+    .popup strong {
+      color: #1a1a1a;
+    }
+
+    .popup-close {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 26px;        /* bigger tap target */
+      height: 26px;
+      font-size: 18px;
+      line-height: 22px;
+      text-align: center;
+      color: #444;
+      background: white;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .popup-close:hover {
+      color: #000;
+    }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      .popup {
+        width: 260px;
+      }
+
+      #filters {
+        font-size: 14px;
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="filters">
+  <label>Type:
+    <select id="typeFilter">
+      <option value="All">All</option>
+      <option value="Hike">Hike</option>
+      <option value="Backpack">Backpack</option>
+      <option value="Kayak">Kayak</option>
+      <option value="Other">Other</option>
+    </select>
+  </label>
+</div>
+
+<div id="map-container">
+  <div id="map"></div>
+</div>
+
+<!-- Async load for GitHub Pages stability -->
+<script async defer
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMCxxUBxZ-a2UyHwu5PbKwYBxvAo0bAAA">
+</script>
+
+<script>
+/* ================= MAP ================= */
+function initMap() {
+
+  const map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 36.805098, lng: -109.822512 },
+    zoom: 6,
+    mapTypeId: google.maps.MapTypeId.TERRAIN,
+    disableDefaultUI: true,
+    gestureHandling: "greedy"
+  });
+
+  /* URL generator → Google Sites trip page */
+  function generatePageUrl(title) {
+    return "https://sites.google.com/view/wholebear/" +
+      title
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-");
+  }
+
+  class Popup extends google.maps.OverlayView {
+    constructor(position, data) {
+      super();
+      this.position = position;
+      this.data = data;
+
+      this.container = document.createElement("div");
+      this.container.className = "popup";
+
+      this.container.innerHTML = `
+        <button class="popup-close">×</button>
+        ${data.photoUrl ? `<img src="${data.photoUrl}">` : ""}
+        <div class="popup-content">
+          <p><strong>Title:</strong> ${data.title}</p>
+          <p><strong>Area:</strong> ${data.area}</p>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Miles:</strong> ${data.miles}</p>
+          <p><strong>Elevation Gain:</strong> ${data.elevationGain}</p>
+          <p><strong>Overall Ranking:</strong> ${data.overallRanking}</p>
+        </div>
+      `;
+
+      /* Open trip page */
+      this.container.addEventListener("click", () => {
+        window.open(generatePageUrl(this.data.title), "_blank");
+      });
+
+      /* Close button */
+      this.container.querySelector(".popup-close")
+        .addEventListener("click", e => {
+          e.stopPropagation();
+          this.setMap(null);
+        });
+    }
+
+    onAdd() {
+      this.getPanes().floatPane.appendChild(this.container);
+    }
+
+    draw() {
+      const point =
+        this.getProjection().fromLatLngToDivPixel(this.position);
+      this.container.style.left = point.x + "px";
+      this.container.style.top = point.y - 12 + "px";
+    }
+
+    onRemove() {
+      if (this.container.parentNode) {
+        this.container.parentNode.removeChild(this.container);
+      }
+    }
+  }
+
+  let activePopup = null;
+
+  function getMarkerIcon(type) {
+    switch (type.toLowerCase()) {
+      case "hike":
+        return "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+      case "backpack":
+        return "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+      case "kayak":
+        return "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+      case "other":
+        return "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+    }
+  }
+
+  async function loadMarkers() {
+    const res = await fetch(
+      "https://script.google.com/macros/s/AKfycbweollfSW_IlQr6nka0s77-WPu4sIdIDDpmq0Z9NV0egq0c-8dVcO4nevotzZM6jA4T/exec"
+    );
+    const data = await res.json();
+
+    data.mapMarkers.forEach(d => {
+      const marker = new google.maps.Marker({
+        position: d.position,
+        map,
+        icon: getMarkerIcon(d.type)
+      });
+
+      marker.addListener("click", () => {
+        if (activePopup) activePopup.setMap(null);
+        activePopup = new Popup(marker.getPosition(), d);
+        activePopup.setMap(map);
+      });
+    });
+  }
+
+  loadMarkers();
+}
+
+/* Ensure map loads after API */
+window.initMap = initMap;
+</script>
+
+</body>
+</html>
